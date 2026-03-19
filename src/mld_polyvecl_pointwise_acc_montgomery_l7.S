@@ -5,236 +5,173 @@
 #include "../common.h"
 #if defined(MLD_ARITH_BACKEND_AARCH64) && !defined(MLD_CONFIG_MULTILEVEL_NO_SHARED) && \
            (defined(MLD_CONFIG_MULTILEVEL_WITH_SHARED) || MLDSA_L == 7)
-/* simpasm: header-end */
 
-.macro montgomery_reduce_long res, inl, inh
-    uzp1   \res\().4s, \inl\().4s, \inh\().4s
-    mul    \res\().4s, \res\().4s, modulus_twisted.4s
-    smlsl  \inl\().2d, \res\().2s, modulus.2s
-    smlsl2 \inh\().2d, \res\().4s, modulus.4s
-    uzp2   \res\().4s, \inl\().4s, \inh\().4s
-.endm
+/*
+ * WARNING: This file is auto-derived from the mldsa-native source file
+ *   dev/aarch64_opt/src/mld_polyvecl_pointwise_acc_montgomery_l7.S using scripts/simpasm. Do not modify it directly.
+ */
 
-.macro load_polys p0, p1, p2, p3, ptr, idx
-.if \idx == 0
-    ldr \p1, [\ptr, #1*16]
-    ldr \p2, [\ptr, #2*16]
-    ldr \p3, [\ptr, #3*16]
-    ldr \p0, [\ptr], #4*16
-.else
-    ldr \p0, [\ptr, #(1024*\idx-4*16)]
-    ldr \p1, [\ptr, #(1024*\idx-3*16)]
-    ldr \p2, [\ptr, #(1024*\idx-2*16)]
-    ldr \p3, [\ptr, #(1024*\idx-1*16)]
-.endif
-.endm
-
-.macro pmull dl, dh, a, b
-    smull  \dl\().2d, \a\().2s, \b\().2s
-    smull2 \dh\().2d, \a\().4s, \b\().4s
-.endm
-
-.macro pmlal dl, dh, a, b
-    smlal  \dl\().2d, \a\().2s, \b\().2s
-    smlal2 \dh\().2d, \a\().4s, \b\().4s
-.endm
-
-    out_ptr .req x0
-    a_ptr   .req x1
-    b_ptr   .req x2
-    count   .req x3
-    wtmp    .req w3
-
-    modulus         .req v0
-    modulus_twisted .req v1
-
-    a_0      .req v16
-    a_1      .req v17
-    a_2      .req v18
-    a_3      .req v19
-
-    b_0      .req v20
-    b_1      .req v21
-    b_2      .req v22
-    b_3      .req v23
-
-    c_0_lo   .req v24
-    c_0_hi   .req v25
-    c_1_lo   .req v26
-    c_1_hi   .req v27
-    c_2_lo   .req v28
-    c_2_hi   .req v29
-    c_3_lo   .req v30
-    c_3_hi   .req v31
-
-    c_0      .req v16
-    c_1      .req v17
-    c_2      .req v18
-    c_3      .req v19
-
-    q_a_0    .req q16
-    q_a_1    .req q17
-    q_a_2    .req q18
-    q_a_3    .req q19
-
-    q_b_0    .req q20
-    q_b_1    .req q21
-    q_b_2    .req q22
-    q_b_3    .req q23
-
-    q_c_0    .req q16
-    q_c_1    .req q17
-    q_c_2    .req q18
-    q_c_3    .req q19
+#if defined(__ELF__)
+.section .note.GNU-stack,"",@progbits
+#endif
 
 .text
-.global MLD_ASM_NAMESPACE(polyvecl_pointwise_acc_montgomery_l7_asm)
 .balign 4
+.global MLD_ASM_NAMESPACE(polyvecl_pointwise_acc_montgomery_l7_asm)
 MLD_ASM_FN_SYMBOL(polyvecl_pointwise_acc_montgomery_l7_asm)
-    // Load MLDSA_Q = 8380417
-    movz wtmp, #0xe001
-    movk wtmp, #0x7f, lsl #16
-    dup modulus.4s, wtmp
 
-    /* check-magic: 58728449 == unsigned_mod(pow(MLDSA_Q, -1, 2**32), 2**32) */
-    // Load MLDSA_Q^-1 = 58728449
-    movz wtmp, #0x2001
-    movk wtmp, #0x380, lsl #16
-    dup modulus_twisted.4s, wtmp
+        .cfi_startproc
+        mov	w3, #0xe001             // =57345
+        movk	w3, #0x7f, lsl #16
+        dup	v0.4s, w3
+        mov	w3, #0x2001             // =8193
+        movk	w3, #0x380, lsl #16
+        dup	v1.4s, w3
+        mov	x3, #0x40               // =64
 
-    mov count, #(MLDSA_N / 4)
+Lpolyvecl_pointwise_acc_montgomery_l7_loop_start:
+        ldr	q17, [x1, #0x10]
+        ldr	q18, [x1, #0x20]
+        ldr	q19, [x1, #0x30]
+        ldr	q16, [x1], #0x40
+        ldr	q21, [x2, #0x10]
+        ldr	q22, [x2, #0x20]
+        ldr	q23, [x2, #0x30]
+        ldr	q20, [x2], #0x40
+        smull	v24.2d, v16.2s, v20.2s
+        smull2	v25.2d, v16.4s, v20.4s
+        smull	v26.2d, v17.2s, v21.2s
+        smull2	v27.2d, v17.4s, v21.4s
+        smull	v28.2d, v18.2s, v22.2s
+        smull2	v29.2d, v18.4s, v22.4s
+        smull	v30.2d, v19.2s, v23.2s
+        smull2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0x3c0]
+        ldr	q17, [x1, #0x3d0]
+        ldr	q18, [x1, #0x3e0]
+        ldr	q19, [x1, #0x3f0]
+        ldr	q20, [x2, #0x3c0]
+        ldr	q21, [x2, #0x3d0]
+        ldr	q22, [x2, #0x3e0]
+        ldr	q23, [x2, #0x3f0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0x7c0]
+        ldr	q17, [x1, #0x7d0]
+        ldr	q18, [x1, #0x7e0]
+        ldr	q19, [x1, #0x7f0]
+        ldr	q20, [x2, #0x7c0]
+        ldr	q21, [x2, #0x7d0]
+        ldr	q22, [x2, #0x7e0]
+        ldr	q23, [x2, #0x7f0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0xbc0]
+        ldr	q17, [x1, #0xbd0]
+        ldr	q18, [x1, #0xbe0]
+        ldr	q19, [x1, #0xbf0]
+        ldr	q20, [x2, #0xbc0]
+        ldr	q21, [x2, #0xbd0]
+        ldr	q22, [x2, #0xbe0]
+        ldr	q23, [x2, #0xbf0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0xfc0]
+        ldr	q17, [x1, #0xfd0]
+        ldr	q18, [x1, #0xfe0]
+        ldr	q19, [x1, #0xff0]
+        ldr	q20, [x2, #0xfc0]
+        ldr	q21, [x2, #0xfd0]
+        ldr	q22, [x2, #0xfe0]
+        ldr	q23, [x2, #0xff0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0x13c0]
+        ldr	q17, [x1, #0x13d0]
+        ldr	q18, [x1, #0x13e0]
+        ldr	q19, [x1, #0x13f0]
+        ldr	q20, [x2, #0x13c0]
+        ldr	q21, [x2, #0x13d0]
+        ldr	q22, [x2, #0x13e0]
+        ldr	q23, [x2, #0x13f0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        ldr	q16, [x1, #0x17c0]
+        ldr	q17, [x1, #0x17d0]
+        ldr	q18, [x1, #0x17e0]
+        ldr	q19, [x1, #0x17f0]
+        ldr	q20, [x2, #0x17c0]
+        ldr	q21, [x2, #0x17d0]
+        ldr	q22, [x2, #0x17e0]
+        ldr	q23, [x2, #0x17f0]
+        smlal	v24.2d, v16.2s, v20.2s
+        smlal2	v25.2d, v16.4s, v20.4s
+        smlal	v26.2d, v17.2s, v21.2s
+        smlal2	v27.2d, v17.4s, v21.4s
+        smlal	v28.2d, v18.2s, v22.2s
+        smlal2	v29.2d, v18.4s, v22.4s
+        smlal	v30.2d, v19.2s, v23.2s
+        smlal2	v31.2d, v19.4s, v23.4s
+        uzp1	v16.4s, v24.4s, v25.4s
+        mul	v16.4s, v16.4s, v1.4s
+        smlsl	v24.2d, v16.2s, v0.2s
+        smlsl2	v25.2d, v16.4s, v0.4s
+        uzp2	v16.4s, v24.4s, v25.4s
+        uzp1	v17.4s, v26.4s, v27.4s
+        mul	v17.4s, v17.4s, v1.4s
+        smlsl	v26.2d, v17.2s, v0.2s
+        smlsl2	v27.2d, v17.4s, v0.4s
+        uzp2	v17.4s, v26.4s, v27.4s
+        uzp1	v18.4s, v28.4s, v29.4s
+        mul	v18.4s, v18.4s, v1.4s
+        smlsl	v28.2d, v18.2s, v0.2s
+        smlsl2	v29.2d, v18.4s, v0.4s
+        uzp2	v18.4s, v28.4s, v29.4s
+        uzp1	v19.4s, v30.4s, v31.4s
+        mul	v19.4s, v19.4s, v1.4s
+        smlsl	v30.2d, v19.2s, v0.2s
+        smlsl2	v31.2d, v19.4s, v0.4s
+        uzp2	v19.4s, v30.4s, v31.4s
+        str	q17, [x0, #0x10]
+        str	q18, [x0, #0x20]
+        str	q19, [x0, #0x30]
+        str	q16, [x0], #0x40
+        subs	x3, x3, #0x4
+        cbnz	x3, Lpolyvecl_pointwise_acc_montgomery_l7_loop_start
+        ret
+        .cfi_endproc
 
-polyvecl_pointwise_acc_montgomery_l7_loop_start:
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 0
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 0
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
+MLD_ASM_FN_SIZE(polyvecl_pointwise_acc_montgomery_l7_asm)
 
-    pmull c_0_lo, c_0_hi, a_0, b_0
-    pmull c_1_lo, c_1_hi, a_1, b_1
-    pmull c_2_lo, c_2_hi, a_2, b_2
-    pmull c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 9q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 1
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 1
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 18q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 2
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 2
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 27q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 3
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 3
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 36q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 4
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 4
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 45q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 5
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 5
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 54q^2
-
-    load_polys q_a_0, q_a_1, q_a_2, q_a_3, a_ptr, 6
-    load_polys q_b_0, q_b_1, q_b_2, q_b_3, b_ptr, 6
-    // Bounds: |a_{i}| < q, |b_{i}| < 9q
-
-    pmlal c_0_lo, c_0_hi, a_0, b_0
-    pmlal c_1_lo, c_1_hi, a_1, b_1
-    pmlal c_2_lo, c_2_hi, a_2, b_2
-    pmlal c_3_lo, c_3_hi, a_3, b_3
-    // Bounds: |c_{i}_lo|, |c_{i}_hi| < 63q^2 < qR/2
-
-    montgomery_reduce_long c_0, c_0_lo, c_0_hi
-    montgomery_reduce_long c_1, c_1_lo, c_1_hi
-    montgomery_reduce_long c_2, c_2_lo, c_2_hi
-    montgomery_reduce_long c_3, c_3_lo, c_3_hi
-    // All coefficients are Montgomery-reduced, resulting in
-    //
-    // Bounds: |c_{i}| < q
-    //
-    // See description of mld_montgomery_reduce() in mldsa/src/reduce.h.
-
-    str q_c_1, [out_ptr, #1*16]
-    str q_c_2, [out_ptr, #2*16]
-    str q_c_3, [out_ptr, #3*16]
-    str q_c_0, [out_ptr], #4*16
-
-    subs count, count, #4
-    cbnz count, polyvecl_pointwise_acc_montgomery_l7_loop_start
-
-    ret
-
-    .unreq out_ptr
-    .unreq a_ptr
-    .unreq b_ptr
-    .unreq count
-    .unreq wtmp
-    .unreq modulus
-    .unreq modulus_twisted
-    .unreq a_0
-    .unreq a_1
-    .unreq a_2
-    .unreq a_3
-    .unreq b_0
-    .unreq b_1
-    .unreq b_2
-    .unreq b_3
-    .unreq c_0_lo
-    .unreq c_0_hi
-    .unreq c_1_lo
-    .unreq c_1_hi
-    .unreq c_2_lo
-    .unreq c_2_hi
-    .unreq c_3_lo
-    .unreq c_3_hi
-    .unreq c_0
-    .unreq c_1
-    .unreq c_2
-    .unreq c_3
-    .unreq q_a_0
-    .unreq q_a_1
-    .unreq q_a_2
-    .unreq q_a_3
-    .unreq q_b_0
-    .unreq q_b_1
-    .unreq q_b_2
-    .unreq q_b_3
-    .unreq q_c_0
-    .unreq q_c_1
-    .unreq q_c_2
-    .unreq q_c_3
-
-/* simpasm: footer-start */
 #endif /* MLD_ARITH_BACKEND_AARCH64 && !MLD_CONFIG_MULTILEVEL_NO_SHARED && \
           (MLD_CONFIG_MULTILEVEL_WITH_SHARED || MLDSA_L == 7) */
